@@ -155,8 +155,15 @@ class InferenceAgent:
 		# res_video_path = self.save_video(d_hat, res_video_path, audio_path)
 		# if verbose: print(f"> [Done] result saved at {res_video_path}")
 
-		images_bhwc = d_hat.squeeze(0).permute(0, 2, 3, 1)
-		images_bhwc = images_bhwc.detach().clamp(-1, 1).cpu()
+		# d_hat is now expected to be on CPU, with shape (T, H, W, C)
+		# if batch size was 1 in FLOAT.py's decode_latent_into_image (which is typical for this node).
+		# The original .squeeze(0).permute(0, 2, 3, 1) might have been for a different d_hat shape.
+		# Given d_hat from FLOAT.py is (T,H,W,C) after its own squeeze(0),
+		# no further squeeze or permute should be needed here.
+		images_bhwc = d_hat
+
+		# Remove .cpu() as images_bhwc (from d_hat) is already on CPU.
+		images_bhwc = images_bhwc.detach().clamp(-1, 1)
 		images_bhwc = ((images_bhwc + 1) / 2) 
 		return images_bhwc
 

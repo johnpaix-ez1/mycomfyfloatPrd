@@ -63,18 +63,28 @@ class FLOAT(BaseModel):
 		
 		T = r_d.shape[1]
 		pbar = ProgressBar(T) # only for decoding latents, encoding + inference is pretty fast
-		d_hat = []
+		# d_hat = [] # Old list for GPU tensors
+		d_hat_cpu_list = [] # New list for CPU tensors
 		for t in range(T):
 			s_r_d_t = s_r + r_d[:, t]
 			img_t, _ = self.motion_autoencoder.dec(s_r_d_t, alpha = None, feats = s_r_feats)
-			d_hat.append(img_t)
+			# d_hat.append(img_t) # Old way
+			d_hat_cpu_list.append(img_t.cpu()) # New: move to CPU before appending
 			pbar.update(1)
-		d_hat = torch.stack(d_hat, dim=1).squeeze()
+
+		d_hat_on_cpu = torch.stack(d_hat_cpu_list, dim=1)
+		# Assuming r_d (and thus img_t) has a batch dimension that might be 1.
+		# If B (batch size of r_d) is 1, .squeeze() removes it.
+		# If B > 1, .squeeze() without args does nothing unless other dims are 1.
+		# To be safe and explicit, if we expect to remove a batch dim of 1:
+		if d_hat_on_cpu.shape[0] == 1:
+			d_hat_on_cpu = d_hat_on_cpu.squeeze(0)
+
 		# end = time.time()
 		
 		# print(end-start, "decoding done")
 
-		return {'d_hat': d_hat}
+		return {'d_hat': d_hat_on_cpu}
 
 
 	######## Motion Sampling and Inference ########
@@ -209,7 +219,7 @@ class AudioEncoder(BaseModel):
 		self.num_frames_for_clip = int(opt.wav2vec_sec * self.opt.fps)
 		self.num_prev_frames = int(opt.num_prev_frames)
 
-		self.wav2vec2 = Wav2VecModel.from_pretrained(opt.wav2vec_model_path, local_files_only=True, attn_implementation="eager")
+		self.wav2vec2 = Wav2VecModel.from_pretrained(opt.wav2vec_model_path, local_files_only=True)
 		self.wav2vec2.feature_extractor._freeze_parameters()
 
 		for name, param in self.wav2vec2.named_parameters():
