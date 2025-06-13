@@ -51,10 +51,10 @@ class Wav2VecModel(Wav2Vec2Model):
         Returns:
             The output of the Wav2Vec model.
         """
-        self.config.output_attentions = True # Reverted: Force output_attentions to True
+        # self.config.output_attentions = True # Ensure this is commented out or removed
 
-        # output_attentions argument from the caller is now ignored for the encoder call.
-        # output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+        # Determine effective output_attentions: use passed argument if available, else default to model config
+        effective_output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
@@ -78,7 +78,7 @@ class Wav2VecModel(Wav2Vec2Model):
         encoder_outputs = self.encoder(
             hidden_states,
             attention_mask=attention_mask,
-            output_attentions=self.config.output_attentions, # Ensure True is effectively passed
+            output_attentions=effective_output_attentions, # Pass the determined value
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
         )
@@ -140,10 +140,10 @@ class Wav2VecModel(Wav2Vec2Model):
         Returns:
             The encoded output features.
         """
-        self.config.output_attentions = True # Reverted: Force output_attentions to True
+        # self.config.output_attentions = True # Ensure this is commented out or removed
 
-        # output_attentions argument from the caller is now ignored for the encoder call.
-        # output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+        # Determine effective output_attentions: use passed argument if available, else default to model config
+        effective_output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
@@ -163,7 +163,7 @@ class Wav2VecModel(Wav2Vec2Model):
         encoder_outputs = self.encoder(
             hidden_states,
             attention_mask=attention_mask,
-            output_attentions=self.config.output_attentions, # Ensure True is effectively passed
+            output_attentions=effective_output_attentions, # Pass the determined value
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
         )

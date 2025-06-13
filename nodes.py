@@ -6,6 +6,9 @@ import torchaudio
 import torchvision.utils as vutils
 import requests # For requests.exceptions.RequestException
 from huggingface_hub.utils import HfHubHTTPError, LocalEntryNotFoundError # For specific Hugging Face errors
+import torch # For torch.cuda.empty_cache()
+import gc # For gc.collect()
+import sys # For the sys.modules check (though we'll use try-except for torch.cuda)
 
 from .generate import InferenceAgent
 from .options.base_options import BaseOptionsJson
@@ -155,3 +158,14 @@ class FloatProcess:
                     os.remove(image_save_path)
                 except Exception as e: # Keep original specific logging for cleanup
                     print(f"[FLOAT Node] Error deleting temporary image file {image_save_path}: {e}")
+
+            # Clear CUDA cache and collect garbage
+            try:
+                if torch.cuda.is_available(): # Check if CUDA is available before trying to empty cache
+                    torch.cuda.empty_cache()
+                    print("ComfyUI-FLOAT: Cleared CUDA cache.")
+            except Exception as e:
+                print(f"ComfyUI-FLOAT: Could not clear CUDA cache (this is normal if CUDA is not available/used or if torch is not fully initialized): {e}")
+
+            gc.collect()
+            print("ComfyUI-FLOAT: Collected garbage.")
