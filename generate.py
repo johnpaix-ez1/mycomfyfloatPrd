@@ -158,9 +158,11 @@ class InferenceAgent:
 		# d_hat is now expected to be on CPU, with shape (T, H, W, C)
 		# if batch size was 1 in FLOAT.py's decode_latent_into_image (which is typical for this node).
 		# The original .squeeze(0).permute(0, 2, 3, 1) might have been for a different d_hat shape.
-		# Given d_hat from FLOAT.py is (T,H,W,C) after its own squeeze(0),
-		# no further squeeze or permute should be needed here.
+		# Given d_hat from FLOAT.py is (T,C,H,W) after its own squeeze(0)
+		# assuming img_t from decoder was (B,C,H,W) and B=1.
 		images_bhwc = d_hat
+		# Permute from (T, C, H, W) to (T, H, W, C) for ComfyUI
+		images_bhwc = images_bhwc.permute(0, 2, 3, 1)
 
 		# Remove .cpu() as images_bhwc (from d_hat) is already on CPU.
 		images_bhwc = images_bhwc.detach().clamp(-1, 1)
